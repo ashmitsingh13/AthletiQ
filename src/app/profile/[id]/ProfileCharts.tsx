@@ -59,7 +59,7 @@ export default function ProfileCharts({ user, results }: Props) {
   if (!user) return <div className="p-6">No data available</div>;
 
   return (
-    <div className="max-w-5xl pt-30 mx-auto p-6">
+    <div className="max-w-5xl pt-10 mx-auto p-6">
       <div className="flex items-center gap-6 mb-6">
         <Image
           src={user.imageUrl || "/defaultImg.png"}
@@ -67,13 +67,12 @@ export default function ProfileCharts({ user, results }: Props) {
           width={120}
           height={120}
           className="rounded"
-          priority // optional: marks image as important for LCP
+          priority
         />
         <div>
           <h2 className="text-2xl font-bold">{user.name}</h2>
           <div className="mt-2">
-            Rank: <strong>{overall.badge}</strong> • Benchmark:{" "}
-            <strong>{overall.score}</strong>
+            Rank: <strong>{overall.badge}</strong> • Benchmark: <strong>{overall.score}</strong>
           </div>
         </div>
       </div>
