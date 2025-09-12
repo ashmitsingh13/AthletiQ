@@ -8,51 +8,44 @@ import { Types } from "mongoose";
 
 const OBJECTID_REGEX = /^[0-9a-fA-F]{24}$/;
 
-interface Params {
-  id: string;
-}
-
-export async function GET(
-  _req: Request,
-  { params }: { params: Params }
-) {
+export async function GET(req: Request) {
   try {
-    const id = params.id;
+    await connectDB();
 
-    if (!id || typeof id !== "string") {
+    // URL se id extract karen
+    const url = new URL(req.url);
+    const segments = url.pathname.split("/"); // ['', 'api', 'profile', 'id']
+    const id = segments[segments.length - 1];
+
+    if (!id || !OBJECTID_REGEX.test(id)) {
       return NextResponse.json(
-        { success: false, error: "Missing or invalid id param" },
+        { success: false, error: "Missing or invalid id" },
         { status: 400 }
       );
     }
 
-    await connectDB();
+    // User fetch
+    const user: IUser | null = await User.findById(new Types.ObjectId(id))
+      .select("-password")
+      .lean<IUser>();
 
-    // Fetch profile
-    const profile: IProfile | null = await Profile.findOne({ userId: id }).lean<IProfile>();
+    // Profile fetch
+    const profile: IProfile | null = await Profile.findOne({ userId: new Types.ObjectId(id) }).lean<IProfile>();
 
-    // Fetch user only if valid ObjectId
-    let user: IUser | null = null;
-    if (OBJECTID_REGEX.test(id)) {
-      user = await User.findById(new Types.ObjectId(id))
-        .select("-password")
-        .lean<IUser>();
-    }
+    // Results fetch
+    const results: IResult[] = await Result.find({ athleteId: new Types.ObjectId(id) })
+      .sort({ createdAt: -1 })
+      .lean<IResult[]>();
 
-    if (!profile && !user) {
+    if (!user && !profile) {
       return NextResponse.json(
         { success: false, error: "User/Profile not found" },
         { status: 404 }
       );
     }
 
-    // Fetch results
-    const results: IResult[] = await Result.find({ athleteId: new Types.ObjectId(id) })
-      .sort({ createdAt: -1 })
-      .lean<IResult[]>();
-
     return NextResponse.json(
-      { success: true, profile: profile || null, user: user || null, results },
+      { success: true, user, profile, results },
       { status: 200 }
     );
   } catch (err: unknown) {
