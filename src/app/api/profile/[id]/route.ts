@@ -1,27 +1,42 @@
+// app/api/profile/[id]/route.ts
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/dbConnect";
-import Result from "@/models/Result";
 import Profile from "@/models/Profile";
+import Result from "@/models/Result";
+import User from "@/models/User";
 
 const OBJECTID_REGEX = /^[0-9a-fA-F]{24}$/;
 
-export async function GET(req: Request) {
+export async function GET(req: Request, { params }: { params: any }) {
   try {
-    await connectDB();
-    const url = new URL(req.url);
-    const segments = url.pathname.split("/"); // ['', 'api', 'profile', 'id']
-    const id = segments[segments.length - 1];
+    // unwrap params if it's a Promise in some runtimes
+    const resolved = await params;
+    const id = resolved?.id;
 
-    if (!id || !OBJECTID_REGEX.test(id)) {
-      return NextResponse.json({ success: false, error: "Invalid or missing id parameter" }, { status: 400 });
+    if (!id || typeof id !== "string") {
+      return NextResponse.json({ success: false, error: "Missing id param" }, { status: 400 });
     }
 
-    const results = await Result.find({ athleteId: id }).sort({ createdAt: -1 }).lean();
+    await connectDB();
+
     const profile = await Profile.findOne({ userId: id }).lean();
 
-    return NextResponse.json({ success: true, results, profile }, { status: 200 });
-  } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : "Server error";
-    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
+    let user = null;
+    if (OBJECTID_REGEX.test(id)) {
+      user = await User.findById(id).lean();
+    }
+
+    if (!profile && !user) {
+      return NextResponse.json({ success: false, error: "User/Profile not found" }, { status: 404 });
+    }
+
+    const results = await Result.find({ athleteId: id })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return NextResponse.json({ success: true, profile: profile || null, user: user || null, results }, { status: 200 });
+  } catch (err: any) {
+    console.error("GET /api/profile/:id error", err);
+    return NextResponse.json({ success: false, error: err?.message || "Server error" }, { status: 500 });
   }
 }
