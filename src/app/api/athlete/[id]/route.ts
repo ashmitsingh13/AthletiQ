@@ -11,7 +11,7 @@ export async function GET(req: Request) {
 
     // Extract the id from URL path
     const url = new URL(req.url);
-    const segments = url.pathname.split("/"); // ["", "api", "athlete", "[id]"]
+    const segments = url.pathname.split("/"); // ["", "api", "profile", "[id]"]
     const id = segments[segments.length - 1];
 
     if (!id || !OBJECTID_REGEX.test(id)) {
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ success: true, results, profile }, { status: 200 });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Server error";
-    console.error("GET /api/athlete/:id error", err);
+    console.error("GET /api/profile/:id error", err);
     return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
