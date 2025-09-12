@@ -18,7 +18,7 @@ export default function Footer() {
             transition={{ duration: 0.5 }}
           >
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl font-extrabold tracking-wide text-blue-600 dark:text-blue-400">
+              <span className="text-2xl font-extrabold tracking-wide text-blue-600 dark:text-blue-600">
                 AthletiQ
               </span>
             </div>
