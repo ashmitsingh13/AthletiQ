@@ -29,10 +29,14 @@ export async function GET(req: Request) {
       { success: true, results, profile },
       { status: 200 }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
+    let errorMessage = "Server error";
+    if (err instanceof Error) {
+      errorMessage = err.message;
+    }
     console.error("GET /api/profile/:id error", err);
     return NextResponse.json(
-      { success: false, error: err?.message || "Server error" },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
