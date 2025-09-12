@@ -29,7 +29,9 @@ interface Props {
 export default function ProfileCharts({ user, results }: Props) {
   const overall = useMemo(() => {
     if (!results.length) return { score: 0, badge: "Bronze" };
-    const avg = Math.round(results.reduce((s, r) => s + (r.score ?? 0), 0) / results.length);
+    const avg = Math.round(
+      results.reduce((s, r) => s + (r.score ?? 0), 0) / results.length
+    );
     const badge = avg >= 80 ? "Gold" : avg >= 60 ? "Silver" : "Bronze";
     return { score: avg, badge };
   }, [results]);
@@ -40,7 +42,7 @@ export default function ProfileCharts({ user, results }: Props) {
         .slice()
         .reverse()
         .map((r) => ({
-          dateIso: new Date(r.createdAt).toISOString(),
+          dateIso: new Date(r.createdAt).toISOString().split("T")[0],
           score: r.score ?? 0,
         })),
     [results]
@@ -72,13 +74,14 @@ export default function ProfileCharts({ user, results }: Props) {
         <div>
           <h2 className="text-2xl font-bold">{user.name}</h2>
           <div className="mt-2">
-            Rank: <strong>{overall.badge}</strong> • Benchmark: <strong>{overall.score}</strong>
+            Rank: **{overall.badge}** • Benchmark: **{overall.score}**
           </div>
         </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
         <div className="p-4 rounded shadow">
+          <h3 className="text-xl font-semibold mb-4">Growth Over Time</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={growthSeries}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -92,6 +95,7 @@ export default function ProfileCharts({ user, results }: Props) {
         </div>
 
         <div className="p-4 rounded shadow">
+          <h3 className="text-xl font-semibold mb-4">Exercise Distribution</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie dataKey="value" data={distribution} outerRadius={90} innerRadius={40}>

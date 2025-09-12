@@ -10,13 +10,15 @@ const OBJECTID_REGEX = /^[0-9a-fA-F]{24}$/;
 
 export async function GET(req: Request) {
   try {
+    // Database connection.
     await connectDB();
 
-    // URL se id extract karen
+    // Extract the ID from the URL pathname.
     const url = new URL(req.url);
-    const segments = url.pathname.split("/"); // ['', 'api', 'profile', 'id']
+    const segments = url.pathname.split("/");
     const id = segments[segments.length - 1];
 
+    // Validate the ID format.
     if (!id || !OBJECTID_REGEX.test(id)) {
       return NextResponse.json(
         { success: false, error: "Missing or invalid id" },
@@ -24,19 +26,24 @@ export async function GET(req: Request) {
       );
     }
 
-    // User fetch
+    // Fetch user details, excluding the password.
     const user: IUser | null = await User.findById(new Types.ObjectId(id))
       .select("-password")
       .lean<IUser>();
 
-    // Profile fetch
-    const profile: IProfile | null = await Profile.findOne({ userId: new Types.ObjectId(id) }).lean<IProfile>();
+    // Fetch the user's profile.
+    const profile: IProfile | null = await Profile.findOne({
+      userId: new Types.ObjectId(id),
+    }).lean<IProfile>();
 
-    // Results fetch
-    const results: IResult[] = await Result.find({ athleteId: new Types.ObjectId(id) })
+    // Fetch all results for the user, sorted by creation date.
+    const results: IResult[] = await Result.find({
+      athleteId: new Types.ObjectId(id),
+    })
       .sort({ createdAt: -1 })
       .lean<IResult[]>();
 
+    // Handle case where no user or profile is found.
     if (!user && !profile) {
       return NextResponse.json(
         { success: false, error: "User/Profile not found" },
@@ -44,13 +51,18 @@ export async function GET(req: Request) {
       );
     }
 
+    // Return a successful response with the fetched data.
     return NextResponse.json(
       { success: true, user, profile, results },
       { status: 200 }
     );
   } catch (err: unknown) {
+    // Handle server errors.
     console.error("GET /api/profile/:id error", err);
     const errorMessage = err instanceof Error ? err.message : "Server error";
-    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: errorMessage },
+      { status: 500 }
+    );
   }
 }
