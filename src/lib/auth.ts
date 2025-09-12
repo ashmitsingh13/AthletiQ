@@ -32,12 +32,16 @@ export function signToken(
 export function verifyToken(token: string): JwtPayload | null {
   try {
     return jwt.verify(token, JWT_SECRET) as JwtPayload;
-  } catch (err) {
+  } catch {
     return null;
   }
 }
 
-export function createAuthResponse(body: any, token: string, maxAgeSec = 60 * 60 * 24 * 7) {
+export function createAuthResponse(
+  body: Record<string, unknown>,
+  token: string,
+  maxAgeSec = 60 * 60 * 24 * 7
+) {
   const res = NextResponse.json(body, { status: 200 });
   res.cookies.set({
     name: TOKEN_NAME,

@@ -4,7 +4,7 @@ import React from "react";
 type RowData = Record<string, unknown>;
 
 export type Column<T extends RowData = RowData> = {
-  key: string;
+  key: keyof T; // ✅ safer type, no "any"
   header?: React.ReactNode;
   render?: (row: T) => React.ReactNode;
   className?: string;
@@ -30,8 +30,11 @@ export function Table<T extends RowData = RowData>({
         <TableHead>
           <TableRow>
             {columns.map((col) => (
-              <TableCell key={col.key} className="px-4 py-2 text-left text-sm font-medium">
-                {col.header ?? col.key}
+              <TableCell
+                key={String(col.key)}
+                className="px-4 py-2 text-left text-sm font-medium"
+              >
+                {col.header ?? String(col.key)}
               </TableCell>
             ))}
           </TableRow>
@@ -41,8 +44,8 @@ export function Table<T extends RowData = RowData>({
           {data.map((row, i) => (
             <TableRow key={i}>
               {columns.map((col) => (
-                <TableCell key={col.key} className="px-4 py-2 text-sm">
-                  {col.render ? col.render(row) : (row as any)[col.key]}
+                <TableCell key={String(col.key)} className="px-4 py-2 text-sm">
+                  {col.render ? col.render(row) : String(row[col.key] ?? "")}
                 </TableCell>
               ))}
             </TableRow>
@@ -59,22 +62,28 @@ export default Table;
    Small subcomponents
    ----------------------- */
 
-export const TableHeader: React.FC<{ children?: React.ReactNode; className?: string }> = ({
-  children,
-  className = "",
-}) => <thead className={`bg-zinc-900 text-white ${className}`}>{children}</thead>;
+export const TableHeader: React.FC<{
+  children?: React.ReactNode;
+  className?: string;
+}> = ({ children, className = "" }) => (
+  <thead className={`bg-zinc-900 text-white ${className}`}>{children}</thead>
+);
 
 export const TableHead = TableHeader;
 
-export const TableBody: React.FC<{ children?: React.ReactNode; className?: string }> = ({
-  children,
-  className = "",
-}) => <tbody className={`bg-white divide-y divide-gray-200 ${className}`}>{children}</tbody>;
+export const TableBody: React.FC<{
+  children?: React.ReactNode;
+  className?: string;
+}> = ({ children, className = "" }) => (
+  <tbody className={`bg-white divide-y divide-gray-200 ${className}`}>
+    {children}
+  </tbody>
+);
 
-export const TableRow: React.FC<{ children?: React.ReactNode; className?: string }> = ({
-  children,
-  className = "",
-}) => <tr className={`${className}`}>{children}</tr>;
+export const TableRow: React.FC<{
+  children?: React.ReactNode;
+  className?: string;
+}> = ({ children, className = "" }) => <tr className={`${className}`}>{children}</tr>;
 
 export const TableCell: React.FC<
   React.TdHTMLAttributes<HTMLTableCellElement> & { children?: React.ReactNode }
