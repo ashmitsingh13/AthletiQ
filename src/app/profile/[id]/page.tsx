@@ -1,47 +1,47 @@
-import { NextResponse } from "next/server";
-import connectDB from "@/lib/dbConnect";
-import User, { IUser } from "@/models/User";
-import Result, { IResult } from "@/models/Result";
-import Profile, { IProfile } from "@/models/Profile";
-import { Types } from "mongoose";
+// ./src/app/profile/[id]/page.tsx
+"use client";
 
-const OBJECTID_REGEX = /^[0-9a-fA-F]{24}$/;
+import React, { useEffect, useState } from "react";
+import ProfileCharts from "./ProfileCharts";
+import { IUser } from "@/models/User";
+import { IResult } from "@/models/Result";
 
-export async function GET(req: Request) {
-  try {
-    await connectDB();
-    const url = new URL(req.url);
-    const segments = url.pathname.split("/"); // ['', 'api', 'profile', '[id]']
-    const id = segments[segments.length - 1];
+interface Params {
+  id: string;
+}
 
-    if (!id || !OBJECTID_REGEX.test(id)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid or missing id parameter" },
-        { status: 400 }
-      );
-    }
+interface ProfilePageProps {
+  params: Params;
+}
 
-    const user: IUser | null = await User.findById(id)
-      .select("-password")
-      .lean<IUser>();
+export default function ProfilePage({ params }: ProfilePageProps) {
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<IUser | null>(null);
+  const [results, setResults] = useState<IResult[]>([]);
 
-    if (!user) {
-      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
-    }
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/profile/${params.id}`);
+        const data = await res.json();
+        if (data.success) {
+          setUser(data.user ?? null);
+          setResults(data.results ?? []);
+        } else {
+          console.error(data.error);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // Fetch results
-    const results: IResult[] = await Result.find({ athleteId: new Types.ObjectId(id) })
-      .sort({ createdAt: -1 })
-      .lean<IResult[]>();
+    fetchData();
+  }, [params.id]);
 
-    // Fetch additional profile (if exists)
-    const profile: IProfile | null = await Profile.findOne({ userId: new Types.ObjectId(id) })
-      .lean<IProfile>();
+  if (loading) return <div className="p-6">Loading...</div>;
 
-    return NextResponse.json({ success: true, user, results, profile }, { status: 200 });
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : "Server error";
-    console.error("GET /api/profile/:id error", err);
-    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
-  }
+  return <ProfileCharts user={user} results={results} />;
 }
