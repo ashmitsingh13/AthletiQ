@@ -8,8 +8,6 @@ const OBJECTID_REGEX = /^[0-9a-fA-F]{24}$/;
 export async function GET(req: Request) {
   try {
     await connectDB();
-
-    // Extract id from URL
     const url = new URL(req.url);
     const segments = url.pathname.split("/"); // ['', 'api', 'profile', 'id']
     const id = segments[segments.length - 1];
