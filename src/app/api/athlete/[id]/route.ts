@@ -5,21 +5,22 @@ import Profile from "@/models/Profile";
 
 const OBJECTID_REGEX = /^[0-9a-fA-F]{24}$/;
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } } // Ye App Router ke liye correct
-) {
+export async function GET(req: Request) {
   try {
     await connectDB();
 
-    const id = params.id;
-    if (!id || typeof id !== "string" || !OBJECTID_REGEX.test(id)) {
+    // Extract the id from URL path
+    const url = new URL(req.url);
+    const segments = url.pathname.split("/"); // ["", "api", "athlete", "[id]"]
+    const id = segments[segments.length - 1];
+
+    if (!id || !OBJECTID_REGEX.test(id)) {
       return NextResponse.json(
         { success: false, error: "Invalid or missing id parameter" },
         { status: 400 }
       );
     }
-    
+
     const results = await Result.find({ athleteId: id })
       .sort({ createdAt: -1 })
       .lean();
