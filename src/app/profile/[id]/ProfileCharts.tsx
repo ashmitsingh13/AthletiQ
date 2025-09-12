@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import Image from "next/image";
 import {
   LineChart,
   Line,
@@ -60,12 +61,13 @@ export default function ProfileCharts({ user, results }: Props) {
   return (
     <div className="max-w-5xl pt-30 mx-auto p-6">
       <div className="flex items-center gap-6 mb-6">
-        <img
+        <Image
           src={user.imageUrl || "/defaultImg.png"}
           alt="avatar"
           width={120}
           height={120}
           className="rounded"
+          priority // optional: marks image as important for LCP
         />
         <div>
           <h2 className="text-2xl font-bold">{user.name}</h2>
