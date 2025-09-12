@@ -10,29 +10,55 @@ export async function POST(req: Request) {
     const { emailOrUsername, password } = body;
 
     if (!emailOrUsername || !password) {
-      return NextResponse.json({ success: false, error: "Missing credentials" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Missing credentials" },
+        { status: 400 }
+      );
     }
 
     await connectDB();
 
     const user = await User.findOne({
-      $or: [{ email: emailOrUsername.toLowerCase() }, { username: emailOrUsername.toLowerCase() }],
+      $or: [
+        { email: emailOrUsername.toLowerCase() },
+        { username: emailOrUsername.toLowerCase() },
+      ],
     });
 
     if (!user) {
-      return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Invalid credentials" },
+        { status: 401 }
+      );
     }
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
-      return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Invalid credentials" },
+        { status: 401 }
+      );
     }
 
     const token = signToken({ sub: user._id.toString(), email: user.email });
-    const safeUser = { _id: user._id, name: user.name || user.fullName || `${user.firstName || ""} ${user.lastName || ""}`.trim(), email: user.email, username: user.username };
+    const safeUser = {
+      _id: user._id,
+      name:
+        user.name ||
+        user.fullName ||
+        `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+      email: user.email,
+      username: user.username,
+    };
+
     return createAuthResponse({ success: true, user: safeUser }, token);
-  } catch (err: any) {
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Server error";
     console.error("LOGIN ERROR", err);
-    return NextResponse.json({ success: false, error: err?.message || "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: errorMessage },
+      { status: 500 }
+    );
   }
 }

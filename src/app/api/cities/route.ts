@@ -3,10 +3,13 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as { country?: string; state?: string };
     const country = (body?.country || "").trim();
     const state = (body?.state || "").trim();
-    if (!country || !state) return NextResponse.json({ data: [] });
+
+    if (!country || !state) {
+      return NextResponse.json({ data: [] });
+    }
 
     const res = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
       method: "POST",
@@ -14,12 +17,16 @@ export async function POST(req: Request) {
       body: JSON.stringify({ country, state }),
     });
 
-    if (!res.ok) return NextResponse.json({ data: [] });
+    if (!res.ok) {
+      return NextResponse.json({ data: [] });
+    }
 
-    const json = await res.json();
+    // explicitly type the response
+    const json: { data?: string[] } = await res.json();
     const cities = Array.isArray(json?.data) ? json.data : [];
+
     return NextResponse.json({ data: cities });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("cities route error", err);
     return NextResponse.json({ data: [] }, { status: 500 });
   }

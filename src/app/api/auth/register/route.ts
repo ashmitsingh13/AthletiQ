@@ -1,63 +1,105 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/dbConnect";
-import User from "@/models/User";
+import User, { IUser } from "@/models/User";
 import bcrypt from "bcryptjs";
 import { signToken, createAuthResponse } from "@/lib/auth";
+
+interface RegisterBody {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  username: string;
+  dob: string;
+  gender: "Male" | "Female" | "Other";
+  weight?: number;
+  country?: string;
+  state?: string;
+  district?: string;
+  documentType?: string;
+  documentNumber?: string;
+  profileImage?: string;
+}
 
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const body = await req.json();
+    const body: RegisterBody = await req.json();
 
-    const required = ["firstName", "lastName", "email", "password", "username", "dob", "gender"];
+    const required: (keyof RegisterBody)[] = [
+      "firstName",
+      "lastName",
+      "email",
+      "password",
+      "username",
+      "dob",
+      "gender",
+    ];
+
     for (const f of required) {
-      if (!body?.[f]) return NextResponse.json({ success: false, error: `${f} is required` }, { status: 400 });
+      if (!body?.[f]) {
+        return NextResponse.json(
+          { success: false, error: `${f} is required` },
+          { status: 400 }
+        );
+      }
     }
 
-    const email = String(body.email).trim().toLowerCase();
-    const username = String(body.username).trim().toLowerCase();
+    const email = body.email.trim().toLowerCase();
+    const username = body.username.trim().toLowerCase();
 
     if (!/^\S+@\S+\.\S+$/.test(email)) {
-      return NextResponse.json({ success: false, error: "Invalid email" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Invalid email" },
+        { status: 400 }
+      );
     }
-    
-    const existing: any = await User.findOne({ $or: [{ email }, { username }] }).lean();
+
+    const existing: IUser | null = await User.findOne({
+      $or: [{ email }, { username }],
+    }).lean<IUser>();
+
     if (existing) {
-      const field = existing.email === email ? 'Email' : 'Username';
-      return NextResponse.json({ success: false, error: `${field} already exists` }, { status: 409 });
+      const field = existing.email === email ? "Email" : "Username";
+      return NextResponse.json(
+        { success: false, error: `${field} already exists` },
+        { status: 409 }
+      );
     }
 
-    const hashed = await bcrypt.hash(String(body.password), 10);
+    const hashed = await bcrypt.hash(body.password, 10);
 
-    // Validate dob before assigning
     const dobDate = new Date(body.dob);
     if (isNaN(dobDate.getTime())) {
-      return NextResponse.json({ success: false, error: "Invalid date of birth" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Invalid date of birth" },
+        { status: 400 }
+      );
     }
 
     const user = new User({
-      firstName: String(body.firstName).trim(),
-      lastName: String(body.lastName).trim(),
-      name: `${String(body.firstName).trim()} ${String(body.lastName).trim()}`,
+      firstName: body.firstName.trim(),
+      lastName: body.lastName.trim(),
+      name: `${body.firstName.trim()} ${body.lastName.trim()}`,
       username,
       email,
       password: hashed,
       dob: dobDate,
-      weight: body.weight !== undefined && body.weight !== null ? Number(body.weight) : undefined,
+      weight: body.weight ?? undefined,
       gender: body.gender,
       country: body.country,
       state: body.state,
       district: body.district,
       documentType: body.documentType,
       documentNumber: body.documentNumber,
-      imageUrl: body.profileImage ? String(body.profileImage) : null,
+      imageUrl: body.profileImage ?? null,
     });
 
     await user.save();
 
     const safeUser = {
-      _id: user._id,
-      id: user._id.toString(), // ensure id is a string
+      _id: user._id.toString(),
+      id: user._id.toString(),
       firstName: user.firstName,
       lastName: user.lastName,
       name: user.name,
@@ -67,17 +109,25 @@ export async function POST(req: Request) {
     };
 
     const token = signToken({ sub: user._id.toString(), email: user.email });
-    
-    // Use createAuthResponse but override status to 201 for resource creation
-    const response = createAuthResponse({ success: true, user: safeUser }, token);
-    return new NextResponse(response.body, { status: 201, headers: response.headers });
 
-  } catch (err: any) {
+    const response = createAuthResponse({ success: true, user: safeUser }, token);
+    return new NextResponse(response.body, {
+      status: 201,
+      headers: response.headers,
+    });
+  } catch (err: unknown) {
     console.error("REGISTER ERROR:", err);
-    // Handle potential duplicate key error from MongoDB race condition
-    if (err.code === 11000) {
-        return NextResponse.json({ success: false, error: "Email or username already exists." }, { status: 409 });
+
+    if (err instanceof Error && "code" in err && (err as any).code === 11000) {
+      return NextResponse.json(
+        { success: false, error: "Email or username already exists." },
+        { status: 409 }
+      );
     }
-    return NextResponse.json({ success: false, error: err?.message || "Server error" }, { status: 500 });
+
+    return NextResponse.json(
+      { success: false, error: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }
