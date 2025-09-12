@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Trophy } from "lucide-react";
+import Image from "next/image";
 
 interface LeaderboardEntry {
   id: string;
@@ -28,7 +29,6 @@ export default function LeaderboardPage() {
       .catch((err) => console.error("Leaderboard fetch error:", err));
   }, []);
 
-  // filter + sort once, switching is instant
   const leaderboard = [...data].sort((a, b) => b.score - a.score);
 
   return (
@@ -78,37 +78,29 @@ export default function LeaderboardPage() {
           <thead className="bg-secondary/40">
             <tr className="text-left">
               <th className="px-4 py-3">Rank</th>
-              
-              <th className="px-4 py-3">
-                {view === "district" ? "District" : "State"}
-              </th>
+              <th className="px-4 py-3">{view === "district" ? "District" : "State"}</th>
               <th className="px-4 py-3">Score</th>
             </tr>
           </thead>
           <tbody>
             {leaderboard.map((athlete, i) => (
-              <tr
-                key={athlete.id}
-                className="border-b hover:bg-muted/40 transition"
-              >
+              <tr key={athlete.id} className="border-b hover:bg-muted/40 transition">
                 <td className="px-4 py-3 font-bold flex items-center gap-2">
-                  {i + 1 === 1 && (
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                  )}
+                  {i + 1 === 1 && <Trophy className="h-5 w-5 text-yellow-500" />}
                   {i + 1}
                 </td>
                 <td className="px-4 py-3 flex items-center gap-2">
-                  <img
+                  <Image
                     src={athlete.imageUrl}
                     alt={athlete.name}
-                    className="w-8 h-8 rounded-full object-cover"
+                    width={32}
+                    height={32}
+                    className="rounded-full object-cover"
                   />
                   {athlete.name}
                 </td>
                 <td className="px-4 py-3">
-                  {view === "district"
-                    ? athlete.district || "Unknown"
-                    : athlete.state || "Unknown"}
+                  {view === "district" ? athlete.district || "Unknown" : athlete.state || "Unknown"}
                 </td>
                 <td className="px-4 py-3">{athlete.score}</td>
               </tr>
@@ -118,9 +110,7 @@ export default function LeaderboardPage() {
       </motion.div>
 
       {leaderboard.length === 0 && (
-        <p className="text-center text-gray-500 mt-10">
-          No leaderboard data available.
-        </p>
+        <p className="text-center text-gray-500 mt-10">No leaderboard data available.</p>
       )}
     </div>
   );

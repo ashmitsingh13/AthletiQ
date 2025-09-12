@@ -3,6 +3,7 @@ import connectDB from "@/lib/dbConnect";
 import User, { IUser } from "@/models/User";
 import bcrypt from "bcryptjs";
 import { signToken, createAuthResponse } from "@/lib/auth";
+import type { MongoServerError } from "mongodb";
 
 interface RegisterBody {
   firstName: string;
@@ -118,7 +119,8 @@ export async function POST(req: Request) {
   } catch (err: unknown) {
     console.error("REGISTER ERROR:", err);
 
-    if (err instanceof Error && "code" in err && (err as any).code === 11000) {
+    // ✅ Properly type MongoDB duplicate key error
+    if ((err as MongoServerError).code === 11000) {
       return NextResponse.json(
         { success: false, error: "Email or username already exists." },
         { status: 409 }

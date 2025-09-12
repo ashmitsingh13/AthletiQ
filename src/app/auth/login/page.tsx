@@ -6,43 +6,42 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
+interface LoginForm {
+  emailOrUsername: string;
+  password: string;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams?.get("next") ?? null;
 
-  // useAuth provides: login(), authProcessing, isAuthenticated, user (optional)
   const { login, authProcessing, isAuthenticated, user: authUser } = useAuth();
 
-  const [form, setForm] = useState({ emailOrUsername: "", password: "" });
+  const [form, setForm] = useState<LoginForm>({ emailOrUsername: "", password: "" });
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect if already authenticated — done inside useEffect to avoid routing during render
   useEffect(() => {
     if (!isAuthenticated) return;
-
-    // Prefer the explicit next param if present, otherwise go to profile (with id if available)
-
-    // Always redirect to /annexure-a after login
     router.replace("/annexure-a");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, authUser, nextUrl]);
+  }, [isAuthenticated, authUser, nextUrl, router]);
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
     try {
-      // login returns { success, user?, error? } or throws
-      const result = (await login({
+      await login({
         emailOrUsername: form.emailOrUsername,
         password: form.password,
-      })) as { success: boolean; user?: { _id: string }; error?: string };
-      // Determine destination: next param -> profile/:id (if result.user._id) -> /profile
+      });
+
       router.replace("/annexure-a");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login error:", err);
-      setError(err?.message || "Login failed. Try again.");
+
+      if (err instanceof Error) setError(err.message);
+      else setError("Login failed. Try again.");
     }
   };
 
@@ -56,9 +55,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
             value={form.emailOrUsername}
-            onChange={(e) =>
-              setForm({ ...form, emailOrUsername: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, emailOrUsername: e.target.value })}
             placeholder="Email or username"
             className="w-full p-2 border rounded"
             autoComplete="username"
@@ -84,9 +81,7 @@ export default function LoginPage() {
 
             <Link
               className="text-sm text-blue-600"
-              href={`/auth/signup${
-                nextUrl ? `?next=${encodeURIComponent(nextUrl)}` : ""
-              }`}
+              href={`/auth/signup${nextUrl ? `?next=${encodeURIComponent(nextUrl)}` : ""}`}
             >
               Create account
             </Link>

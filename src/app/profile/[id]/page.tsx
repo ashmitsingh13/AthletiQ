@@ -20,74 +20,58 @@ import type { IUser } from "@/models/User";
 import type { IProfile } from "@/models/Profile";
 import type { IResult } from "@/models/Result";
 
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 const COLORS = ["#f44336", "#ff9800", "#ffd600", "#4caf50", "#2196f3"];
+
+interface Params {
+  id: string;
+}
 
 export default function ProfilePage({
   params,
 }: {
-  params: Promise<{ id: string }> | { id: string };
+  params: Params | Promise<Params>;
 }) {
-  const resolvedParams =
+  const resolvedParams: Params =
     params && typeof (params as any).then === "function"
-      ? (React.use(params as any) as { id: string })
-      : (params as { id: string });
-  const userId = resolvedParams?.id;
+      ? React.use(params as any)
+      : (params as Params);
+
+  const userId = resolvedParams.id;
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<IUser | null>(null);
-  const [profile, setProfile] = useState<IProfile | null>(null);
   const [results, setResults] = useState<IResult[]>([]);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState<{
-    name: string;
-    age: number;
-    gender: string;
-    sport: string;
-    state: string;
-    profileImage: string;
-  }>({
-    name: "",
-    age: 0,
-    gender: "",
-    sport: "",
-    state: "",
-    profileImage: "",
-  });
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [saving, setSaving] = useState(false);
 
+  // Fetch profile data
   useEffect(() => {
     if (!userId) return;
+
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/profile/${userId}`);
+        const data: {
+          success: boolean;
+          user?: IUser;
+          results?: IResult[];
+          error?: string;
+        } = await res.json();
+
+        if (!res.ok) throw new Error(data?.error || "Failed to fetch");
+
+        setUser(data.user ?? null);
+        setResults(data.results ?? []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchData();
   }, [userId]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/profile/${userId}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to fetch");
-      setUser(data.user || null);
-      setProfile(data.profile || null);
-      setResults(data.results || []);
-      setForm({
-        name: (data.profile?.name || data.user?.name) ?? "",
-        age: data.profile?.age ?? 0,
-        gender: data.profile?.gender ?? "",
-        sport: data.profile?.sport ?? "",
-        state: data.profile?.state ?? "",
-        profileImage:
-          data.profile?.profileImage ?? data.user?.avatarUrl ?? "",
-      });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Overall score and badge
   const overall = useMemo(() => {
     if (!results.length) return { score: 0, badge: "Bronze" };
     const avg = Math.round(
@@ -97,6 +81,7 @@ export default function ProfilePage({
     return { score: avg, badge };
   }, [results]);
 
+  // Growth chart series
   const growthSeries = useMemo(
     () =>
       results
@@ -110,6 +95,7 @@ export default function ProfilePage({
     [results]
   );
 
+  // Y domain, best score, last test
   const { yDomain, bestScore, lastTest } = useMemo(() => {
     const scores = results.map((r) => Number(r.score ?? 0));
     if (!scores.length)
@@ -123,6 +109,7 @@ export default function ProfilePage({
     return { yDomain: [min, max], bestScore: best, lastTest: last };
   }, [results]);
 
+  // Exercise distribution
   const distribution = useMemo(() => {
     const counts = Object.entries(
       results.reduce<Record<string, number>>((acc, r) => {
@@ -146,7 +133,7 @@ export default function ProfilePage({
           className="rounded"
         />
         <div>
-          <h2 className="text-2xl font-bold">{form.name || user?.name}</h2>
+          <h2 className="text-2xl font-bold">{user?.name}</h2>
           <div className="mt-2">
             Rank: <strong>{overall.badge}</strong> • Benchmark:{" "}
             <strong>{overall.score}</strong>
@@ -166,16 +153,35 @@ export default function ProfilePage({
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={growthSeries}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="dateIso" tickFormatter={(iso) => new Date(iso).toLocaleDateString()} />
+              <XAxis
+                dataKey="dateIso"
+                tickFormatter={(iso) => new Date(iso).toLocaleDateString()}
+              />
               <YAxis domain={yDomain} allowDecimals={false} />
-              <Tooltip formatter={(value: number) => [value, "Score"]} labelFormatter={(label: string) => new Date(label).toLocaleString()} />
+              <Tooltip
+                formatter={(value: number) => [value, "Score"]}
+                labelFormatter={(label: string) =>
+                  new Date(label).toLocaleString()
+                }
+              />
               <ReferenceLine
                 y={overall.score}
                 stroke="#4caf50"
                 strokeDasharray="3 3"
-                label={{ value: `Avg ${overall.score}`, position: "right", fill: "#4caf50" }}
+                label={{
+                  value: `Avg ${overall.score}`,
+                  position: "right",
+                  fill: "#4caf50",
+                }}
               />
-              <Line type="monotone" dataKey="score" stroke="#8884d8" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+              <Line
+                type="monotone"
+                dataKey="score"
+                stroke="#8884d8"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -183,12 +189,22 @@ export default function ProfilePage({
         <div className="p-4 rounded shadow">
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-              <Pie dataKey="value" data={distribution} outerRadius={90} innerRadius={40} label={({ name, value, percent }) => `${name}: ${value} (${Math.round((percent ?? 0) * 100)}%)`}>
+              <Pie
+                dataKey="value"
+                data={distribution}
+                outerRadius={90}
+                innerRadius={40}
+                label={({ name, value, percent }) =>
+                  `${name}: ${value} (${Math.round((percent ?? 0) * 100)}%)`
+                }
+              >
                 {distribution.map((entry, idx) => (
                   <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value: number, name: string) => [value, name]} />
+              <Tooltip
+                formatter={(value: number, name: string) => [value, name]}
+              />
               <Legend verticalAlign="bottom" height={36} />
             </PieChart>
           </ResponsiveContainer>
