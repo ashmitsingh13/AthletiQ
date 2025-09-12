@@ -17,7 +17,6 @@ import {
   ReferenceLine,
 } from "recharts";
 import type { IUser } from "@/models/User";
-import type { IProfile } from "@/models/Profile";
 import type { IResult } from "@/models/Result";
 
 const COLORS = ["#f44336", "#ff9800", "#ffd600", "#4caf50", "#2196f3"];
@@ -26,17 +25,12 @@ interface Params {
   id: string;
 }
 
-export default function ProfilePage({
-  params,
-}: {
-  params: Params | Promise<Params>;
-}) {
-  const resolvedParams: Params =
-    params && typeof (params as any).then === "function"
-      ? React.use(params as any)
-      : (params as Params);
+interface ProfilePageProps {
+  params: Params;
+}
 
-  const userId = resolvedParams.id;
+export default function ProfilePage({ params }: ProfilePageProps) {
+  const userId = params.id;
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<IUser | null>(null);
@@ -61,7 +55,7 @@ export default function ProfilePage({
 
         setUser(data.user ?? null);
         setResults(data.results ?? []);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(err);
       } finally {
         setLoading(false);
@@ -90,14 +84,14 @@ export default function ProfilePage({
         .map((r) => ({
           dateIso: new Date(r.createdAt).toISOString(),
           dateLabel: new Date(r.createdAt).toLocaleString(),
-          score: Number(r.score ?? 0),
+          score: r.score ?? 0,
         })),
     [results]
   );
 
   // Y domain, best score, last test
   const { yDomain, bestScore, lastTest } = useMemo(() => {
-    const scores = results.map((r) => Number(r.score ?? 0));
+    const scores = results.map((r) => r.score ?? 0);
     if (!scores.length)
       return { yDomain: [0, 100], bestScore: 0, lastTest: null };
     const min = Math.max(0, Math.min(...scores) - 10);
@@ -202,9 +196,7 @@ export default function ProfilePage({
                   <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip
-                formatter={(value: number, name: string) => [value, name]}
-              />
+              <Tooltip formatter={(value: number, name: string) => [value, name]} />
               <Legend verticalAlign="bottom" height={36} />
             </PieChart>
           </ResponsiveContainer>

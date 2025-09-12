@@ -27,7 +27,8 @@ export default function ContactPage() {
       } else {
         setStatus("error");
       }
-    } catch (_) { // use _ to indicate unused error
+    } catch {
+      // Remove unused '_' variable
       setStatus("error");
     }
   };
