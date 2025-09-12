@@ -50,7 +50,7 @@ export default function FeaturePage() {
       {/* Header */}
       <div className="max-w-4xl mx-auto text-center space-y-4">
         <Badge className="animate-pulse">🏅 Athlete Portal</Badge>
-        <h1 className="text-4xl md:text-6xl font-bold font-[Neucha]">
+        <h1 className="text-4xl md:text-6xl font-bold">
           Unlock Your Athletic Potential
         </h1>
         <p className="text-muted-foreground text-lg">

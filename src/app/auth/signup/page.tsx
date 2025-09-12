@@ -373,12 +373,13 @@ export default function SignupPage() {
 
   return (
     <>
-      <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-8 bg-background text-white">
+      <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-8 bg-background">
         <Card className="w-full max-w-3xl mx-auto shadow-2xl rounded-xl border border-border bg-card transition-all">
           <CardContent className="p-6 sm:p-8 space-y-6">
             <h1 className="text-2xl sm:text-3xl font-bold text-center text-primary">
               Create Your Account
             </h1>
+
             {errors && (
               <div className="rounded-md bg-red-50 border border-red-100 px-4 py-2 text-sm text-red-700">
                 {errors}
@@ -467,10 +468,11 @@ export default function SignupPage() {
                   required
                 />
               </div>
-
               <div className="flex flex-col gap-2">
-                <Label>Age</Label>
+                <Label htmlFor="age">Age</Label>
                 <Input
+                  id="age"
+                  name="age"
                   value={formData.age ?? ""}
                   readOnly
                   disabled
@@ -491,30 +493,23 @@ export default function SignupPage() {
                   placeholder="70"
                 />
               </div>
-
               {/* Gender */}
               <div className="flex flex-col gap-2">
                 <Label htmlFor="gender">Gender</Label>
-
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Select
-                      onValueChange={(val) => handleSelectChange("gender", val)}
-                      value={formData.gender}
-                    >
-                      <SelectTrigger id="gender" className="w-full">
-                        <SelectValue placeholder="Select Gender" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <Select
+                  onValueChange={(val) => handleSelectChange("gender", val)}
+                  value={formData.gender}
+                >
+                  <SelectTrigger id="gender" className="w-full">
+                    <SelectValue placeholder="Select Gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-
               {/* Profile Image Upload */}
               <div className="sm:col-span-2 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
@@ -530,7 +525,7 @@ export default function SignupPage() {
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
-                  className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:text-white hover:file:bg-black"
+                  className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
                 />
 
                 {formData.profileImage && (
@@ -569,27 +564,25 @@ export default function SignupPage() {
                 )}
               </div>
 
-              <div className="sm:col-span-2 flex flex-col gap-2 relative">
-  <Label htmlFor="country">Country</Label>
-
-  <Select
-    onValueChange={(val) => handleSelectChange("country", val)}
-    value={formData.country} // controlled value
-  >
-    <SelectTrigger id="country" className="w-full">
-      <SelectValue placeholder="Select Country" />
-    </SelectTrigger>
-
-    <SelectContent>
-      {countries.map((c, idx) => (
-        <SelectItem key={idx} value={c}>
-          {c}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-</div>
-
+              {/* Country */}
+              <div className="sm:col-span-2 flex flex-col gap-2">
+                <Label htmlFor="country">Country</Label>
+                <Select
+                  onValueChange={(val) => handleSelectChange("country", val)}
+                  value={formData.country}
+                >
+                  <SelectTrigger id="country" className="w-full">
+                    <SelectValue placeholder="Select Country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countries.map((c, idx) => (
+                      <SelectItem key={idx} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               {/* State / City */}
               <div className="sm:col-span-2 flex flex-col gap-2">
@@ -599,8 +592,9 @@ export default function SignupPage() {
                     onValueChange={(val) => handleSelectChange("state", val)}
                     value={formData.state}
                   >
-                    <SelectTrigger id="state" className="w-full" />
-                    <SelectValue placeholder="Select State" />
+                    <SelectTrigger id="state" className="w-full">
+                      <SelectValue placeholder="Select State" />
+                    </SelectTrigger>
                     <SelectContent>
                       {states.map((s, i) => (
                         <SelectItem key={i} value={s}>
@@ -628,8 +622,9 @@ export default function SignupPage() {
                     onValueChange={(val) => handleSelectChange("district", val)}
                     value={formData.district}
                   >
-                    <SelectTrigger id="district" className="w-full" />
-                    <SelectValue placeholder="Select District" />
+                    <SelectTrigger id="district" className="w-full">
+                      <SelectValue placeholder="Select District" />
+                    </SelectTrigger>
                     <SelectContent>
                       {cities.map((d, i) => (
                         <SelectItem key={i} value={d}>
@@ -651,25 +646,26 @@ export default function SignupPage() {
               </div>
 
               {/* Document Type & Number */}
-              <div className="flex flex-col gap-2 relative">
-  <Label htmlFor="documentType">Document Type</Label>
-
-  <Select
-    onValueChange={(val) => handleSelectChange("documentType", val)}
-    value={formData.documentType} // controlled value
-  >
-    <SelectTrigger id="documentType" className="w-full">
-      <SelectValue placeholder="Select Document" />
-    </SelectTrigger>
-
-    <SelectContent>
-      <SelectItem value="Aadhaar">Aadhaar</SelectItem>
-      <SelectItem value="Passport">Passport</SelectItem>
-      <SelectItem value="Driving License">Driving License</SelectItem>
-    </SelectContent>
-  </Select>
-</div>
-
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="documentType">Document Type</Label>
+                <Select
+                  onValueChange={(val) =>
+                    handleSelectChange("documentType", val)
+                  }
+                  value={formData.documentType}
+                >
+                  <SelectTrigger id="documentType" className="w-full">
+                    <SelectValue placeholder="Select Document" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Aadhaar">Aadhaar</SelectItem>
+                    <SelectItem value="Passport">Passport</SelectItem>
+                    <SelectItem value="Driving License">
+                      Driving License
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="documentNumber">Document Number</Label>
@@ -688,7 +684,7 @@ export default function SignupPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-primary text-black hover:bg-primary/90 rounded-xl"
+                  className="w-full bg-white text-black hover:bg-primary/90 rounded-xl"
                 >
                   {loading ? "Creating Account..." : "Sign Up"}
                 </Button>
