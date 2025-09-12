@@ -4,51 +4,21 @@ import connectDB from "@/lib/dbConnect";
 import ResultModel from "@/models/Result";
 import UserModel from "@/models/User";
 
-connectDB(); // ensure connection (cached)
-
-interface Metadata {
-  exercise?: string;
-  score?: number;
-  feedback?: string[];
-  corrections?: string[];
-  reps?: number;
-  jumpHeightCm?: number;
-  jumpDisplacementNorm?: number;
-  turns?: number;
-  splitTimes?: number[];
-  cadence?: number;
-  trunkAngleAvg?: number;
-  trunkAngleMin?: number;
-  trunkAngleMax?: number;
-  distanceKm?: number;
-  durationSec?: number;
-  paceMinPerKm?: number;
-}
-
-interface SubmitBody {
-  athleteId: string;
-  videoUrl?: string;
-  metadata: Metadata;
-}
+connectDB(); // ensure connection (safe to call multiple times thanks to caching helper)
 
 export async function POST(req: Request) {
   try {
-    const body: SubmitBody = await req.json();
-    const { metadata, videoUrl, athleteId } = body;
+    const body = await req.json();
+    const { metadata, videoUrl, athleteId } = body ?? {};
 
-    if (!athleteId) {
-      return NextResponse.json({ error: "athleteId is required" }, { status: 400 });
-    }
-
-    if (!metadata || typeof metadata !== "object") {
+    // server-side validation
+    if (!athleteId) return NextResponse.json({ error: "athleteId is required" }, { status: 400 });
+    if (!metadata || typeof metadata !== "object")
       return NextResponse.json({ error: "metadata is required" }, { status: 400 });
-    }
 
-    // confirm athlete exists
+    // optional: confirm athlete exists
     const athlete = await UserModel.findById(athleteId).lean();
-    if (!athlete) {
-      return NextResponse.json({ error: "athlete not found" }, { status: 404 });
-    }
+    if (!athlete) return NextResponse.json({ error: "athlete not found" }, { status: 404 });
 
     // construct result doc
     const doc = {
@@ -57,30 +27,26 @@ export async function POST(req: Request) {
       score: Number(metadata.score ?? 0),
       feedback: Array.isArray(metadata.feedback) ? metadata.feedback : [],
       corrections: Array.isArray(metadata.corrections) ? metadata.corrections : [],
-      reps: metadata.reps,
-      jumpHeightCm: metadata.jumpHeightCm,
-      jumpDisplacementNorm: metadata.jumpDisplacementNorm,
-      turns: metadata.turns,
+      reps: metadata.reps ?? undefined,
+      jumpHeightCm: metadata.jumpHeightCm ?? undefined,
+      jumpDisplacementNorm: metadata.jumpDisplacementNorm ?? undefined,
+      turns: metadata.turns ?? undefined,
       splitTimes: Array.isArray(metadata.splitTimes) ? metadata.splitTimes : undefined,
-      cadence: metadata.cadence,
-      trunkAngleAvg: metadata.trunkAngleAvg,
-      trunkAngleMin: metadata.trunkAngleMin,
-      trunkAngleMax: metadata.trunkAngleMax,
-      distanceKm: metadata.distanceKm,
-      durationSec: metadata.durationSec,
-      paceMinPerKm: metadata.paceMinPerKm,
+      cadence: metadata.cadence ?? undefined,
+      trunkAngleAvg: metadata.trunkAngleAvg ?? undefined,
+      trunkAngleMin: metadata.trunkAngleMin ?? undefined,
+      trunkAngleMax: metadata.trunkAngleMax ?? undefined,
+      distanceKm: metadata.distanceKm ?? undefined,
+      durationSec: metadata.durationSec ?? undefined,
+      paceMinPerKm: metadata.paceMinPerKm ?? undefined,
       videoUrl: videoUrl || "",
       createdAt: new Date(),
     };
 
     const saved = await ResultModel.create(doc);
     return NextResponse.json({ success: true, result: saved }, { status: 201 });
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("API /api/submit error:", err);
-
-    let message = "Server error";
-    if (err instanceof Error) message = err.message;
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
   }
 }

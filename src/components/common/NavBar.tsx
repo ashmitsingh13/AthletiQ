@@ -173,17 +173,16 @@ export default function Navbar() {
             <Link href="/" className="hover:text-primary text-lg" onClick={() => setIsOpen(false)}>
               Home
             </Link>
-            <Link href="/ai-coach" className="hover:text-primary text-lg" onClick={() => setIsOpen(false)}>
-              AI-coach
+            <Link href="/features" className="hover:text-primary text-lg" onClick={() => setIsOpen(false)}>
+              Features
             </Link>
-
+            <Link href="/sports" className="hover:text-primary text-lg" onClick={() => setIsOpen(false)}>
+              Sports
+            </Link>
             {isAuthenticated && (
               <>
                 <Link href="/annexure-a" className="hover:text-primary text-lg" onClick={() => setIsOpen(false)}>
                   Tests
-                </Link>
-                <Link href="/features" className="hover:text-primary text-lg" onClick={() => setIsOpen(false)}>
-                  Features
                 </Link>
                 <Link href="/leaderboard" className="hover:text-primary text-lg" onClick={() => setIsOpen(false)}>
                   Leaderboard
@@ -191,17 +190,14 @@ export default function Navbar() {
                 <Link href="/trainer" className="hover:text-primary text-lg" onClick={() => setIsOpen(false)}>
                   Trainer
                 </Link>
-                <Link href="/achievements" className="hover:text-primary text-lg" onClick={() => setIsOpen(false)}>
-                  Workout
-                </Link>
               </>
             )}
 
-            <Link href="/about" className="hover:text-primary text-lg" onClick={() => setIsOpen(false)}>
-              About
-            </Link>
             <Link href="/contact" className="hover:text-primary text-lg" onClick={() => setIsOpen(false)}>
               Contact
+            </Link>
+            <Link href="/about" className="hover:text-primary text-lg" onClick={() => setIsOpen(false)}>
+              About
             </Link>
 
             {loading ? null : isAuthenticated && user ? (

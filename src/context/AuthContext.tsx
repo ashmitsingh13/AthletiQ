@@ -9,20 +9,6 @@ type User = {
   name?: string;
   email?: string;
   username?: string;
-  imageUrl?: string;
-};
-
-type LoginPayload = {
-  emailOrUsername: string;
-  password: string;
-};
-
-type RegisterPayload = {
-  name: string;
-  email: string;
-  username: string;
-  password: string;
-  imageUrl?: string;
 };
 
 type AuthContextValue = {
@@ -31,9 +17,19 @@ type AuthContextValue = {
   authProcessing: boolean;
   isAuthenticated: boolean;
   refreshUser: () => Promise<User | null>;
-  login: (payload: LoginPayload) => Promise<{ success: boolean; error?: string }>;
-  register: (payload: RegisterPayload) => Promise<{ success: boolean; error?: string }>;
+  login: (payload: {
+    emailOrUsername: string;
+    password: string;
+  }) => Promise<{ success: boolean; error?: string }>;
+  register: (payload: RegistrationPayload) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+};
+type RegistrationPayload = {
+  name?: string;
+  email: string;
+  username?: string;
+  password: string;
+  // Add other fields as needed
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -44,7 +40,9 @@ export function useAuth() {
   return ctx;
 }
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [authProcessing, setAuthProcessing] = useState(false);
@@ -53,9 +51,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshUser = async (): Promise<User | null> => {
     try {
       setLoading(true);
-      const resp = await fetch("/api/auth/me", { method: "GET", credentials: "include" });
+      const resp = await fetch("/api/auth/me", {
+        method: "GET",
+        credentials: "include",
+      });
       const data = await resp.json();
-      if (!resp.ok) { setUser(null); return null; }
+      if (!resp.ok) {
+        setUser(null);
+        return null;
+      }
       setUser(data.user || null);
       return data.user || null;
     } catch (err) {
@@ -67,9 +71,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  useEffect(() => { refreshUser(); }, []);
+  useEffect(() => {
+    refreshUser();
+  }, []);
 
-  const login = async (payload: LoginPayload) => {
+  const login = async (payload: {
+    emailOrUsername: string;
+    password: string;
+  }) => {
     setAuthProcessing(true);
     try {
       const resp = await fetch("/api/auth/login", {
@@ -79,14 +88,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify(payload),
       });
       const data = await resp.json();
-      if (!resp.ok) return { success: false, error: data.error || "Login failed" };
+      if (!resp.ok) {
+        return { success: false, error: data.error || "Login failed" };
+      }
       await refreshUser();
       return { success: true };
-    } catch (err) { return { success: false, error: (err as Error).message || "Network error" }; }
-    finally { setAuthProcessing(false); }
+    } catch (err: unknown) {
+      console.error("login error", err);
+      let errorMsg = "Network error";
+      if (err instanceof Error) errorMsg = err.message;
+      return { success: false, error: errorMsg };
+    } finally {
+      setAuthProcessing(false);
+    }
   };
 
-  const register = async (payload: RegisterPayload) => {
+  const register = async (payload: RegistrationPayload) => {
     setAuthProcessing(true);
     try {
       const resp = await fetch("/api/auth/register", {
@@ -96,21 +113,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify(payload),
       });
       const data = await resp.json();
-      if (!resp.ok) return { success: false, error: data.error || "Registration failed" };
+      if (!resp.ok) {
+        return { success: false, error: data.error || "Registration failed" };
+      }
       await refreshUser();
       return { success: true };
-    } catch (err) { return { success: false, error: (err as Error).message || "Network error" }; }
-    finally { setAuthProcessing(false); }
+    } catch (err: unknown) {
+      console.error("register error", err);
+      let errorMsg = "Network error";
+      if (err instanceof Error) errorMsg = err.message;
+      return { success: false, error: errorMsg };
+    } finally {
+      setAuthProcessing(false);
+    }
   };
 
   const logout = async () => {
     setAuthProcessing(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
       setUser(null);
       router.push("/auth/login");
-    } catch (err) { console.error("logout error", err); }
-    finally { setAuthProcessing(false); }
+    } catch (err) {
+      console.error("logout error", err);
+    } finally {
+      setAuthProcessing(false);
+    }
   };
 
   const value: AuthContextValue = {
@@ -124,5 +155,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
   };
 
-  return <AuthContext.Provider value={value}>{loading ? <LoadingScreen /> : children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {loading ? <LoadingScreen /> : children}
+    </AuthContext.Provider>
+  );
 };
