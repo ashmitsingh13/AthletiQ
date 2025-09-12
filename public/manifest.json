@@ -1,0 +1,25 @@
+{
+  "name": "AthletiQ",
+  "short_name": "AthletiQ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2EC6FE",
+  "theme_color": "#8936FF",
+  "orientation": "any",
+  "dir": "auto",
+  "lang": "en-US",
+  "icons": [
+    {
+      "purpose": "maskable",
+      "sizes": "512x512",
+      "src": "/icons/icon512_maskable.png",
+      "type": "image/png"
+    },
+    {
+      "purpose": "any",
+      "sizes": "512x512",
+      "src": "/icons/icon512_rounded.png",
+      "type": "image/png"
+    }
+  ]
+}
