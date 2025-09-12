@@ -1,42 +1,63 @@
-// app/api/profile/[id]/route.ts
+// ./src/app/api/profile/[id]/route.ts
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/dbConnect";
-import Profile from "@/models/Profile";
-import Result from "@/models/Result";
-import User from "@/models/User";
+import Profile, { IProfile } from "@/models/Profile";
+import Result, { IResult } from "@/models/Result";
+import User, { IUser } from "@/models/User";
+import { Types } from "mongoose";
 
 const OBJECTID_REGEX = /^[0-9a-fA-F]{24}$/;
 
-export async function GET(req: Request, { params }: { params: any }) {
+interface Params {
+  id: string;
+}
+
+export async function GET(
+  _req: Request,
+  { params }: { params: Params }
+) {
   try {
-    // unwrap params if it's a Promise in some runtimes
-    const resolved = await params;
-    const id = resolved?.id;
+    const id = params.id;
 
     if (!id || typeof id !== "string") {
-      return NextResponse.json({ success: false, error: "Missing id param" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Missing or invalid id param" },
+        { status: 400 }
+      );
     }
 
     await connectDB();
 
-    const profile = await Profile.findOne({ userId: id }).lean();
+    // Fetch profile
+    const profile: IProfile | null = await Profile.findOne({ userId: id }).lean<IProfile>();
 
-    let user = null;
+    // Fetch user only if valid ObjectId
+    let user: IUser | null = null;
     if (OBJECTID_REGEX.test(id)) {
-      user = await User.findById(id).lean();
+      user = await User.findById(new Types.ObjectId(id))
+        .select("-password")
+        .lean<IUser>();
     }
 
     if (!profile && !user) {
-      return NextResponse.json({ success: false, error: "User/Profile not found" }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "User/Profile not found" },
+        { status: 404 }
+      );
     }
 
-    const results = await Result.find({ athleteId: id })
+    // Fetch results
+    const results: IResult[] = await Result.find({ athleteId: new Types.ObjectId(id) })
       .sort({ createdAt: -1 })
-      .lean();
+      .lean<IResult[]>();
 
-    return NextResponse.json({ success: true, profile: profile || null, user: user || null, results }, { status: 200 });
-  } catch (err: any) {
+    return NextResponse.json(
+      { success: true, profile: profile || null, user: user || null, results },
+      { status: 200 }
+    );
+  } catch (err: unknown) {
     console.error("GET /api/profile/:id error", err);
-    return NextResponse.json({ success: false, error: err?.message || "Server error" }, { status: 500 });
+    const errorMessage = err instanceof Error ? err.message : "Server error";
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
