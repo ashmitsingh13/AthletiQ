@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
@@ -28,8 +27,6 @@ type FormShape = {
 };
 
 export default function SignupPage() {
-  const router = useRouter();
-
   const [formData, setFormData] = useState<FormShape>({
     firstName: "",
     lastName: "",

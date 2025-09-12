@@ -9,6 +9,7 @@ type User = {
   name?: string;
   email?: string;
   username?: string;
+  imageUrl?: string;
 };
 
 type LoginPayload = {
@@ -21,6 +22,7 @@ type RegisterPayload = {
   email: string;
   username: string;
   password: string;
+  imageUrl?: string;
 };
 
 type AuthContextValue = {
@@ -42,9 +44,7 @@ export function useAuth() {
   return ctx;
 }
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [authProcessing, setAuthProcessing] = useState(false);
@@ -53,18 +53,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const refreshUser = async (): Promise<User | null> => {
     try {
       setLoading(true);
-      const resp = await fetch("/api/auth/me", {
-        method: "GET",
-        credentials: "include",
-      });
+      const resp = await fetch("/api/auth/me", { method: "GET", credentials: "include" });
       const data = await resp.json();
-      if (!resp.ok) {
-        setUser(null);
-        return null;
-      }
+      if (!resp.ok) { setUser(null); return null; }
       setUser(data.user || null);
       return data.user || null;
-    } catch (err: unknown) {
+    } catch (err) {
       console.error("refreshUser error:", err);
       setUser(null);
       return null;
@@ -73,9 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  useEffect(() => {
-    refreshUser();
-  }, []);
+  useEffect(() => { refreshUser(); }, []);
 
   const login = async (payload: LoginPayload) => {
     setAuthProcessing(true);
@@ -87,18 +79,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         body: JSON.stringify(payload),
       });
       const data = await resp.json();
-      if (!resp.ok) {
-        return { success: false, error: data.error || "Login failed" };
-      }
+      if (!resp.ok) return { success: false, error: data.error || "Login failed" };
       await refreshUser();
       return { success: true };
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Network error";
-      console.error("login error", message);
-      return { success: false, error: message };
-    } finally {
-      setAuthProcessing(false);
-    }
+    } catch (err) { return { success: false, error: (err as Error).message || "Network error" }; }
+    finally { setAuthProcessing(false); }
   };
 
   const register = async (payload: RegisterPayload) => {
@@ -111,34 +96,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         body: JSON.stringify(payload),
       });
       const data = await resp.json();
-      if (!resp.ok) {
-        return { success: false, error: data.error || "Registration failed" };
-      }
+      if (!resp.ok) return { success: false, error: data.error || "Registration failed" };
       await refreshUser();
       return { success: true };
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Network error";
-      console.error("register error", message);
-      return { success: false, error: message };
-    } finally {
-      setAuthProcessing(false);
-    }
+    } catch (err) { return { success: false, error: (err as Error).message || "Network error" }; }
+    finally { setAuthProcessing(false); }
   };
 
   const logout = async () => {
     setAuthProcessing(true);
     try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
       setUser(null);
       router.push("/auth/login");
-    } catch (err: unknown) {
-      console.error("logout error", err);
-    } finally {
-      setAuthProcessing(false);
-    }
+    } catch (err) { console.error("logout error", err); }
+    finally { setAuthProcessing(false); }
   };
 
   const value: AuthContextValue = {
@@ -152,9 +124,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     logout,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {loading ? <LoadingScreen /> : children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{loading ? <LoadingScreen /> : children}</AuthContext.Provider>;
 };
