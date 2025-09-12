@@ -9,9 +9,8 @@ export async function GET(req: Request) {
   try {
     await connectDB();
 
-    // Extract the id from URL path
-    const url = new URL(req.url);
-    const segments = url.pathname.split("/"); // ["", "api", "profile", "[id]"]
+    // Dynamic id extract from URL
+    const segments = req.url.split("/"); 
     const id = segments[segments.length - 1];
 
     if (!id || !OBJECTID_REGEX.test(id)) {
