@@ -3,24 +3,23 @@
 import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
 import { FC } from "react";
 
 interface SupportCardProps {
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>> | FC<any>;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; // ✅ no 'any'
   title: string;
   description: string;
   buttonText: string;
   delay?: number;
 }
 
-export default function SupportCard({
+const SupportCard: FC<SupportCardProps> = ({
   icon: Icon,
   title,
   description,
   buttonText,
   delay,
-}: SupportCardProps) {
+}) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -43,4 +42,6 @@ export default function SupportCard({
       </Card>
     </motion.div>
   );
-}
+};
+
+export default SupportCard;

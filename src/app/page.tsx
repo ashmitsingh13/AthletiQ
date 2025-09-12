@@ -1,8 +1,6 @@
-import Footer from "@/components/common/Footer";
-import Navbar from "@/components/common/NavBar";
-import FaqSection from "@/components/sections/FaqSection";
-import Hero from "@/components/sections/HeroSection";
 import React from "react";
+import Hero from "@/components/sections/HeroSection";
+import FaqSection from "@/components/sections/FaqSection";
 
 const Home = () => {
   return (
