@@ -21,22 +21,21 @@ import type { IResult } from "@/models/Result";
 
 const COLORS = ["#f44336", "#ff9800", "#ffd600", "#4caf50", "#2196f3"];
 
-interface Params {
-  id: string;
+// ✅ Next.js ke liye correct type
+interface PageProps {
+  params: {
+    id: string;
+    [key: string]: string; // extra safety
+  };
 }
 
-interface ProfilePageProps {
-  params: Params;
-}
-
-export default function ProfilePage({ params }: ProfilePageProps) {
+export default function ProfilePage({ params }: PageProps) {
   const userId = params.id;
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<IUser | null>(null);
   const [results, setResults] = useState<IResult[]>([]);
 
-  // Fetch profile data
   useEffect(() => {
     if (!userId) return;
 
@@ -46,14 +45,14 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         const res = await fetch(`/api/profile/${userId}`);
         const data: {
           success: boolean;
-          user?: IUser;
+          profile?: IUser;
           results?: IResult[];
           error?: string;
         } = await res.json();
 
         if (!res.ok) throw new Error(data?.error || "Failed to fetch");
 
-        setUser(data.user ?? null);
+        setUser(data.profile ?? null);
         setResults(data.results ?? []);
       } catch (err: unknown) {
         console.error(err);
@@ -65,17 +64,13 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     fetchData();
   }, [userId]);
 
-  // Overall score and badge
   const overall = useMemo(() => {
     if (!results.length) return { score: 0, badge: "Bronze" };
-    const avg = Math.round(
-      results.reduce((s, r) => s + (r.score ?? 0), 0) / results.length
-    );
+    const avg = Math.round(results.reduce((s, r) => s + (r.score ?? 0), 0) / results.length);
     const badge = avg >= 80 ? "Gold" : avg >= 60 ? "Silver" : "Bronze";
     return { score: avg, badge };
   }, [results]);
 
-  // Growth chart series
   const growthSeries = useMemo(
     () =>
       results
@@ -89,29 +84,23 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     [results]
   );
 
-  // Y domain, best score, last test
   const { yDomain, bestScore, lastTest } = useMemo(() => {
     const scores = results.map((r) => r.score ?? 0);
-    if (!scores.length)
-      return { yDomain: [0, 100], bestScore: 0, lastTest: null };
+    if (!scores.length) return { yDomain: [0, 100], bestScore: 0, lastTest: null };
     const min = Math.max(0, Math.min(...scores) - 10);
     const max = Math.min(100, Math.max(...scores) + 10);
     const best = Math.max(...scores);
-    const last = results.length
-      ? new Date(results[results.length - 1].createdAt)
-      : null;
+    const last = results.length ? new Date(results[results.length - 1].createdAt) : null;
     return { yDomain: [min, max], bestScore: best, lastTest: last };
   }, [results]);
 
-  // Exercise distribution
   const distribution = useMemo(() => {
-    const counts = Object.entries(
+    return Object.entries(
       results.reduce<Record<string, number>>((acc, r) => {
         if (r.exercise) acc[r.exercise] = (acc[r.exercise] || 0) + 1;
         return acc;
       }, {})
     ).map(([name, value]) => ({ name, value }));
-    return counts;
   }, [results]);
 
   if (loading) return <div className="p-6">Loading...</div>;
@@ -129,15 +118,12 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         <div>
           <h2 className="text-2xl font-bold">{user?.name}</h2>
           <div className="mt-2">
-            Rank: <strong>{overall.badge}</strong> • Benchmark:{" "}
-            <strong>{overall.score}</strong>
+            Rank: <strong>{overall.badge}</strong> • Benchmark: <strong>{overall.score}</strong>
           </div>
           <div className="mt-2 text-sm text-gray-600">
             <span className="mr-4">Total tests: {results.length}</span>
             <span className="mr-4">Best score: {bestScore}</span>
-            <span>
-              Last test: {lastTest ? lastTest.toLocaleString() : "—"}
-            </span>
+            <span>Last test: {lastTest ? lastTest.toLocaleString() : "—"}</span>
           </div>
         </div>
       </div>
@@ -147,35 +133,16 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={growthSeries}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="dateIso"
-                tickFormatter={(iso) => new Date(iso).toLocaleDateString()}
-              />
+              <XAxis dataKey="dateIso" tickFormatter={(iso) => new Date(iso).toLocaleDateString()} />
               <YAxis domain={yDomain} allowDecimals={false} />
-              <Tooltip
-                formatter={(value: number) => [value, "Score"]}
-                labelFormatter={(label: string) =>
-                  new Date(label).toLocaleString()
-                }
-              />
+              <Tooltip formatter={(value: number) => [value, "Score"]} labelFormatter={(label: string) => new Date(label).toLocaleString()} />
               <ReferenceLine
                 y={overall.score}
                 stroke="#4caf50"
                 strokeDasharray="3 3"
-                label={{
-                  value: `Avg ${overall.score}`,
-                  position: "right",
-                  fill: "#4caf50",
-                }}
+                label={{ value: `Avg ${overall.score}`, position: "right", fill: "#4caf50" }}
               />
-              <Line
-                type="monotone"
-                dataKey="score"
-                stroke="#8884d8"
-                strokeWidth={2}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
+              <Line type="monotone" dataKey="score" stroke="#8884d8" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -188,9 +155,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 data={distribution}
                 outerRadius={90}
                 innerRadius={40}
-                label={({ name, value, percent }) =>
-                  `${name}: ${value} (${Math.round((percent ?? 0) * 100)}%)`
-                }
+                label={({ name, value, percent }) => `${name}: ${value} (${Math.round((percent ?? 0) * 100)}%)`}
               >
                 {distribution.map((entry, idx) => (
                   <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
