@@ -2,15 +2,15 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/dbConnect";
 import Result from "@/models/Result";
 import Profile from "@/models/Profile";
+import User from "@/models/User";
 
 const OBJECTID_REGEX = /^[0-9a-fA-F]{24}$/;
 
 export async function GET(req: Request) {
   try {
     await connectDB();
-
-    // Dynamic id extract from URL
-    const segments = req.url.split("/"); 
+    const url = new URL(req.url);
+    const segments = url.pathname.split("/"); 
     const id = segments[segments.length - 1];
 
     if (!id || !OBJECTID_REGEX.test(id)) {
@@ -26,10 +26,15 @@ export async function GET(req: Request) {
 
     const profile = await Profile.findOne({ userId: id }).lean();
 
-    return NextResponse.json({ success: true, results, profile }, { status: 200 });
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : "Server error";
+    return NextResponse.json(
+      { success: true, results, profile },
+      { status: 200 }
+    );
+  } catch (err: any) {
     console.error("GET /api/profile/:id error", err);
-    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: err?.message || "Server error" },
+      { status: 500 }
+    );
   }
 }
