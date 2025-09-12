@@ -7,7 +7,7 @@ const OBJECTID_REGEX = /^[0-9a-fA-F]{24}$/;
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } } // Ye App Router ke liye correct
 ) {
   try {
     await connectDB();
@@ -19,24 +19,17 @@ export async function GET(
         { status: 400 }
       );
     }
-
+    
     const results = await Result.find({ athleteId: id })
       .sort({ createdAt: -1 })
       .lean();
 
     const profile = await Profile.findOne({ userId: id }).lean();
 
-    return NextResponse.json(
-      { success: true, results, profile },
-      { status: 200 }
-    );
+    return NextResponse.json({ success: true, results, profile }, { status: 200 });
   } catch (err) {
-    const errorMessage =
-      err instanceof Error ? err.message : "Server error";
+    const errorMessage = err instanceof Error ? err.message : "Server error";
     console.error("GET /api/athlete/:id error", err);
-    return NextResponse.json(
-      { success: false, error: errorMessage },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
